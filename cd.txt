@@ -1,0 +1,1095 @@
+using EasyShoeDemo.Lib.Entities;
+using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace EasyShoeDemo.Lib.Data
+{
+    public class ApplicationContext : DbContext
+    {
+        public DbSet<Role> Roles => Set<Role>();
+        public DbSet<Category> Categories => Set<Category>();
+        public DbSet<Manufacturer> Manufacturers => Set<Manufacturer>();
+        public DbSet<Supplier> Suppliers => Set<Supplier>();
+        public DbSet<PickupPoint> PickupPoints => Set<PickupPoint>();
+        public DbSet<User> Users => Set<User>();
+        public DbSet<Product> Products => Set<Product>();
+        public DbSet<Order> Orders => Set<Order>();
+        public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=ilin_easyshoe;Username=postgres;Password=postgres");
+        }
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<Product>(entity =>
+            {
+                entity.ToTable("products");
+                entity.HasKey(e => e.Article);
+            }
+            );
+        }
+    }
+}
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace EasyShoeDemo.Lib.Entities
+{
+    [Table("categories")]
+    public class Category
+    {
+        [Column("id")]
+        public int Id { get; set; }
+        [Column("name")]
+        public string Name { get; set; } = null!;
+        public List<Product> Products { get; set; } = new();
+    }
+}
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace EasyShoeDemo.Lib.Entities
+{
+    [Table("manufacturers")]
+    public class Manufacturer
+    {
+        [Column("id")]
+        public int Id { get; set; }
+        [Column("name")]
+        public string Name { get; set; } = null!;
+        public List<Product> Products { get; set; } = new();
+    }
+}
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace EasyShoeDemo.Lib.Entities
+{
+    [Table("orders")]
+    public class Order
+    {
+        [Column("id")]
+        public int Id { get; set; }
+        [Column("client_id")]
+        public int ClientId { get; set; }
+        [Column("pickup_point_id")]
+        public int PickupPointId { get; set; }
+        [Column("order_date")]
+        public DateOnly OrderDate { get; set; }
+        [Column("delivery_date")]
+        public DateOnly DeliveryDate { get; set; }
+        [Column("status")]
+        public string Status { get; set; } = null!;
+        [Column("pickup_code")]
+        public string PickupCode { get; set; } = null!;
+        public User Client { get; set; } = null!;
+        public PickupPoint PickupPoint { get; set; } = null!;
+        public List<OrderItem> OrderItems { get; set; } = new();
+    }
+}
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace EasyShoeDemo.Lib.Entities
+{
+    [Table("order_items")]
+    public class OrderItem
+    {
+        [Column("id")]
+        public int Id { get; set; }
+        [Column("product_article")]
+        public string ProductArticle { get; set; } = null!;
+        [Column("quantity")]
+        public int Quantity { get; set; }
+        public List<Order> Orders { get; set; } = new();
+    }
+}
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace EasyShoeDemo.Lib.Entities
+{
+    [Table("pickup_points")]
+    public class PickupPoint
+    {
+        [Column("id")]
+        public int Id { get; set; }
+        [Column("address")]
+        public string Address { get; set; } = null!;
+        public List<Order> Orders { get; set; } = null!;
+    }
+}
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Xml.Schema;
+
+namespace EasyShoeDemo.Lib.Entities
+{
+    [Table("products")]
+    public class Product
+    {
+        [Column("article")]
+        public string Article { get; set; } = null!;
+        [Column("name")]
+        public string Name { get; set; } = null!;
+        [Column("unit")]
+        public string Unit { get; set; } = null!;
+        [Column("price")]
+        public decimal Price { get; set; }
+        [Column("category_id")]
+        public int CategoryId { get; set; }
+        [Column("manufacturer_id")]
+        public int ManufacturerId { get; set; }
+        [Column("supplier_id")]
+        public int SupplierId { get; set; }
+        [Column("discount_percent")]
+        public int DiscountPercent { get; set; }
+        [Column("stock_quantity")]
+        public int StockQuantity { get; set; }
+        [Column("description")]
+        public string? Description { get; set; }
+        [Column("photo_path")]
+        public string? PhotoPath { get; set; }
+        public Category Category { get; set; } = null!;
+        public Manufacturer Manufacturer { get; set; } = null!;
+        public Supplier Supplier { get; set; } = null!;
+        public List<OrderItem> OrderItems { get; set; } = new();
+        public decimal DiscountedPrice =>
+            Price - Price * DiscountPercent / 100m;
+        public bool HasDiscount => DiscountPercent > 0;
+        public bool HasBigDiscount => DiscountPercent > 15;
+        public bool IsOutOfStock => StockQuantity == 0;
+        public string DisplayPhotoPath
+        {
+            get
+            {
+                string imagesFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "images");
+                string defaultImagePath = Path.Combine(imagesFolder, "picture.png");
+
+                if (string.IsNullOrWhiteSpace(PhotoPath))
+                    return defaultImagePath;
+
+                string fullPath = Path.Combine(imagesFolder, PhotoPath);
+
+                if (File.Exists(fullPath))
+                    return fullPath;
+
+                return defaultImagePath;
+            }
+        }
+    }
+}
+
+using Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure.Internal;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace EasyShoeDemo.Lib.Entities
+{
+    [Table("roles")]
+    public class Role
+    {
+        [Column("id")]
+        public int Id { get; set; }
+        [Column("name")]
+        public string Name { get; set; } = null!;
+        public List<User> Users { get; set; } = new();
+    }
+}
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace EasyShoeDemo.Lib.Entities
+{
+    [Table("suppliers")]
+    public class Supplier
+    {
+        [Column("id")]
+        public int Id { get; set; }
+        [Column("name")]
+        public string Name { get; set; } = null!;
+        public List<Product> Products { get; set; } = new();
+    }
+}
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace EasyShoeDemo.Lib.Entities
+{
+    [Table("users")]
+    public class User
+    {
+        [Column("id")]
+        public int Id { get; set; }
+        [Column("login")]
+        public string Login { get; set; } = null!;
+        [Column("password_hash")]
+        public string PasswordHash { get; set; } = null!;
+        [Column("full_name")]
+        public string FullName { get; set; } = null!;
+        [Column("role_id")]
+        public int RoleId { get; set; }
+        public Role Role { get; set; } = null!;
+        public List<Order> Orders { get; set; } = new();
+    }
+}
+
+using EasyShoeDemo.Lib.Entities;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace EasyShoeDemo.Lib.Services
+{
+    public interface IMainApp
+    {
+        User? Authorize(string login, string password);
+        string GetRoleName(int roleId);
+        List<Category> GetCategories();
+        List<Manufacturer> GetManufacturers();
+        List<Supplier> GetSuppliers();
+        List<Product> GetProducts();
+        List<Product> GetFilteredProducts(string? searchText, int? categoryId, int? manufacturerId, int? supplierId, string? sortType);
+        Product? GetProductByArticle(string article);
+        void AddProduct(Product product);
+        void UpdateProduct(Product product);
+        void DeleteProduct(string article);
+    }
+}
+
+using EasyShoeDemo.Lib.Data;
+using EasyShoeDemo.Lib.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace EasyShoeDemo.Lib.Services
+{
+    public class MainApp : IMainApp
+    {
+        public User? Authorize(string login,  string password)
+        {
+            if (string.IsNullOrWhiteSpace(login))
+                throw new Exception("Введите логин");
+            if (string.IsNullOrWhiteSpace(password))
+                throw new Exception("Введите пароль");
+            var db = new ApplicationContext();
+            return db.Users.FirstOrDefault(x => x.Login == login &&
+            x.PasswordHash == password);
+        }
+        public string GetRoleName(int roleId)
+        {
+            using var db = new ApplicationContext();
+            var role = db.Roles.FirstOrDefault(x => x.Id == roleId);
+            if (role == null)
+                throw new Exception("Роль не найдена");
+            return role.Name;
+        }
+        public List<Category> GetCategories()
+        {
+            using var db = new ApplicationContext();
+            return db.Categories
+                .OrderBy(x => x.Name)
+                .ToList();
+        }
+        public List<Manufacturer> GetManufacturers()
+        {
+            using var db = new ApplicationContext();
+            return db.Manufacturers
+                .OrderBy(x => x.Name)
+                .ToList();
+        }
+        public List<Supplier> GetSuppliers()
+        {
+            using var db = new ApplicationContext();
+            return db.Suppliers
+                .OrderBy(x => x.Name)
+                .ToList();
+        }
+        public List<Product> GetProducts()
+        {
+            using var db = new ApplicationContext();
+            return db.Products
+                .Include(x => x.Category)
+                .Include(x => x.Manufacturer)
+                .Include(x => x.Supplier)
+                .ToList();
+        }
+        public List<Product> GetFilteredProducts(string? searchText, int? categoryId, int? manufacturerId, int? supplierId, string? sortType)
+        {
+            using var db = new ApplicationContext();
+            var query = db.Products
+                .Include(x => x.Category)
+                .Include(x => x.Manufacturer)
+                .Include(x => x.Supplier)
+                .AsQueryable();
+            if (!string.IsNullOrWhiteSpace(searchText))
+            {
+                searchText = searchText.Trim().ToLower();
+                query = query.Where(x =>
+                x.Article.ToLower().Contains(searchText) ||
+                x.Name.ToLower().Contains(searchText) ||
+                (x.Description != null && x.Description.ToLower().Contains(searchText)) ||
+                x.Unit.ToLower().Contains(searchText) ||
+                x.Category.Name.ToLower().Contains(searchText) ||
+                x.Manufacturer.Name.ToLower().Contains(searchText) ||
+                x.Supplier.Name.ToLower().Contains(searchText));
+            }
+            if (categoryId.HasValue)
+                query = query.Where(x => x.CategoryId == categoryId.Value);
+            if (manufacturerId.HasValue)
+                query = query.Where(x => x.ManufacturerId == manufacturerId.Value);
+            if (supplierId.HasValue)
+                query = query.Where(x => x.SupplierId == supplierId.Value);
+            if (sortType == "asc")
+            {
+                query = query.OrderBy(x => x.StockQuantity);
+            }
+            else if (sortType == "desc")
+            {
+                query = query.OrderByDescending(x => x.StockQuantity);
+            }
+            else
+            {
+                query = query.OrderBy(x => x.Name);
+            }
+            return query.ToList();
+        }
+        public Product? GetProductByArticle(string article)
+        {
+            using var db = new ApplicationContext();
+            return db.Products
+                .Include(x => x.Category)
+                .Include(x => x.Manufacturer)
+                .Include(x => x.Supplier)
+                .FirstOrDefault(x => x.Article == article);
+        }
+        public void AddProduct(Product product)
+        {
+            if (product == null)
+                throw new Exception("Товар не передан");
+            ValidateProduct(product, false);
+            using var db = new ApplicationContext();
+            db.Products.Add(product);
+            db.SaveChanges();
+        }
+        public void UpdateProduct(Product product)
+        {
+            if (product == null)
+                throw new Exception("Товар не передан");
+            ValidateProduct(product, false);
+            using var db = new ApplicationContext();
+            var existingProduct = db.Products.FirstOrDefault(x => x.Article == product.Article);
+            if (existingProduct == null)
+                throw new Exception("Товар не найден");
+            existingProduct.Name = product.Name;
+            existingProduct.Unit = product.Unit;
+            existingProduct.Price = product.Price;
+            existingProduct.CategoryId = product.CategoryId;
+            existingProduct.ManufacturerId = product.ManufacturerId;
+            existingProduct.SupplierId = product.SupplierId;
+            existingProduct.DiscountPercent = product.DiscountPercent;
+            existingProduct.StockQuantity = product.StockQuantity;
+            existingProduct.Description = product.Description;
+            existingProduct.PhotoPath = product.PhotoPath;
+            db.SaveChanges();
+        }
+        public void DeleteProduct(string article)
+        {
+            using var db = new ApplicationContext();
+            var product = db.Products.FirstOrDefault(x => x.Article == article);
+            if (product == null)
+                throw new Exception("Товар не найден");
+            bool hasOrderitems = db.OrderItems.Any(x => x.ProductArticle == article);
+            if (hasOrderitems)
+                throw new Exception("Нельзя удалить товар, который используется в заказе");
+            db.Products.Remove(product);
+            db.SaveChanges();
+        }
+        private void ValidateProduct(Product product, bool isNew)
+        {
+            if (string.IsNullOrWhiteSpace(product.Article))
+                throw new Exception("Введите артикул товара.");
+            if (product.Article.Length != 6)
+                throw new Exception("Артикул товара должен содержать ровно 6 символов.");
+            if (string.IsNullOrWhiteSpace(product.Name))
+                throw new Exception("Введите наименование товара.");
+            if (string.IsNullOrWhiteSpace(product.Unit))
+                throw new Exception("Введите единицу измерения.");
+            if (product.Price < 0)
+                throw new Exception("Цена не может быть отрицательной.");
+            if (product.StockQuantity < 0)
+                throw new Exception("Количество на складе не может быть отрицательным.");
+            if (product.DiscountPercent < 0 || product.DiscountPercent > 100)
+                throw new Exception("Скидка должна быть в диапазоне от 0 до 100.");
+            if (product.CategoryId <= 0)
+                throw new Exception("Выберите категорию.");
+            if (product.ManufacturerId <= 0)
+                throw new Exception("Выберите производителя.");
+            if (product.SupplierId <= 0)
+                throw new Exception("Выберите поставщика.");
+        }
+    }
+}
+
+<Window x:Class="EasyShoeDemo.Wpf.LoginWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:EasyShoeDemo.Wpf"
+        mc:Ignorable="d"
+        Title="LoginWindow" Height="200" Width="300">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <TextBlock Text="Вход в систему" Grid.Row="0"/>
+        <StackPanel Grid.Row="1">
+            <TextBlock Text="Логин"/>
+            <TextBox x:Name="LoginTextBox"/>
+        </StackPanel>
+        <StackPanel Grid.Row="2">
+            <TextBlock Text="Пароль"/>
+            <PasswordBox x:Name="PasswordBox"/>
+        </StackPanel>
+        <StackPanel Grid.Row="3" Orientation="Horizontal">
+            <Button x:Name="LoginButton" Content="Войти" Width="100" Height="25" Click="LoginButton_Click"/>
+            <Button x:Name="GuestButton" Content="Войти как гость" Width="100" Height="25" Click="GuestButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>
+
+using EasyShoeDemo.Lib.Services;
+using System.Windows;
+using System.Windows.Controls;
+
+namespace EasyShoeDemo.Wpf
+{
+    public partial class LoginWindow : Window
+    {
+        private IMainApp _mainApp;
+        public LoginWindow()
+        {
+            InitializeComponent();
+            _mainApp = new MainApp();
+        }
+        private void LoginButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var user = _mainApp.Authorize(LoginTextBox.Text.Trim(), PasswordBox.Password);
+                if (user == null)
+                {
+                    MessageBox.Show("Неверный логин или пароль!",
+                        "Ошибка входа", MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                    return;
+                }
+                var roleName = _mainApp.GetRoleName(user.RoleId);
+                var window = new MainWindow(user, roleName);
+                window.Show();
+                Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+        }
+        private void GuestButton_Click(object sender, RoutedEventArgs e)
+        {
+            var window = new MainWindow(null, "Гость");
+            window.Show();
+            Close();
+        }
+    }
+}
+
+<Window x:Class="EasyShoeDemo.Wpf.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:EasyShoeDemo.Wpf"
+        mc:Ignorable="d"
+        Title="Товары"
+        Height="600"
+        Width="1000"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        FontFamily="Times New Roman">
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem x:Name="ProductsMenuItems" Header="Товары">
+                <MenuItem x:Name="AddProduct" Header="Добавить товар" Click="AddProduct_Click"/>
+                <MenuItem x:Name="UpdateProduct" Header="Редактировать товар" Click="UpdateProduct_Click"/>
+                <MenuItem x:Name="DeleteProduct" Header="Удалить товар" Click="DeleteProduct_Click"/>
+            </MenuItem>
+            <MenuItem x:Name="Exit" Header="Выход" Click="Exit_Click"/>
+        </Menu>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <TextBlock Text="Список товаров" Grid.Row="0" HorizontalAlignment="Center" FontSize="16" FontWeight="Bold"/>
+            <TextBlock x:Name="UserInfoTextBlock" Grid.Row="1" HorizontalAlignment="Left" FontSize="16" FontWeight="Bold" Margin="10"/>
+            <StackPanel Orientation="Horizontal" Grid.Row="2" Margin="10">
+                <TextBox x:Name="SearchTextBox" Width="125" Margin="0,0,15,0" TextChanged="SearchTextBox_TextChanged"/>
+                <ComboBox x:Name="CategoryComboBox" Width="125" Margin="0,0,15,0" DisplayMemberPath="Name" SelectedValuePath="Id" SelectionChanged="CategoryComboBox_SelectionChanged"/>
+                <ComboBox x:Name="ManufacturerComboBox" Width="125" Margin="0,0,15,0" DisplayMemberPath="Name" SelectedValuePath="Id" SelectionChanged="ManufacturerComboBox_SelectionChanged"/>
+                <ComboBox x:Name="SupplierComboBox" Width="125" Margin="0,0,15,0" DisplayMemberPath="Name" SelectedValuePath="Id" SelectionChanged="SupplierComboBox_SelectionChanged"/>
+                <ComboBox x:Name="SortComboBox" Width="125" SelectedIndex="0" SelectionChanged="SortComboBox_SelectionChanged">
+                    <ComboBoxItem Content="Без сортировки" Tag=""/>
+                    <ComboBoxItem Content="По возрастанию" Tag="asc"/>
+                    <ComboBoxItem Content="По убыванию" Tag="desc"/>
+                </ComboBox>
+            </StackPanel>
+            <ListView x:Name="ProductsListView" BorderThickness="1" Background="White" Grid.Row="3">
+                <ListView.ItemTemplate>
+                    <DataTemplate>
+                        <Border Margin="0,0,0,10" Padding="10" BorderBrush="Black" BorderThickness="1" Width="900">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Background" Value="White"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsOutOfStock}" Value="True">
+                                            <Setter Property="Background" Value="LightBlue"/>
+                                        </DataTrigger>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding IsOutOfStock}" Value="False"/>
+                                                <Condition Binding="{Binding HasBigDiscount}" Value="True"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Background" Value="#2E8B57"/>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="170"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="150"/>
+                                </Grid.ColumnDefinitions>
+                                <Border Grid.Column="0" Width="150" Height="120" BorderBrush="Gray" BorderThickness="1">
+                                    <Image Source="{Binding DisplayPhotoPath}" Stretch="Uniform"/>
+                                </Border>
+                                <StackPanel Grid.Column="1" Margin="10,0">
+                                    <TextBlock FontWeight="Bold" FontSize="16">
+                                        <Run Text="{Binding Category.Name}"/>
+                                        <Run Text=" | "/>
+                                        <Run Text="{Binding Name}"/>
+                                    </TextBlock>
+                                    <TextBlock Text="{Binding Description, StringFormat=Описание: {0}}" TextWrapping="Wrap" Margin="0,5,0,0"/>
+                                    <TextBlock Text="{Binding Manufacturer.Name, StringFormat=Производитель: {0}}"/>
+                                    <TextBlock Text="{Binding Supplier.Name, StringFormat=Поставщик: {0}}"/>
+                                    <TextBlock Text="{Binding Unit, StringFormat=Единица измерения: {0}}"/>
+                                    <TextBlock Text="{Binding StockQuantity, StringFormat=Количество на складе: {0}}"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                        <TextBlock Text="Цена: "/>
+                                        <TextBlock Text="{Binding Price}" Foreground="Red" TextDecorations="Strikethrough">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding HasDiscount}" Value="True">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding DiscountedPrice}" Margin="5,0,0,0"/>
+                                        <TextBlock Text="{Binding Price}" Margin="5,0,0,0">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding HasDiscount}" Value="True">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </StackPanel>
+                                <TextBlock Grid.Column="2"
+                                           Text="{Binding DiscountPercent, StringFormat=Скидка: {0}%}"
+                                           FontSize="16"
+                                           FontWeight="Bold"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </Grid>
+    </DockPanel>
+</Window>
+
+using EasyShoeDemo.Lib.Entities;
+using EasyShoeDemo.Lib.Services;
+using System.Windows;
+using System.Windows.Controls;
+
+namespace EasyShoeDemo.Wpf
+{
+    /// <summary>
+    /// Interaction logic for MainWindow.xaml
+    /// </summary>
+    public partial class MainWindow : Window
+    {
+        private readonly User? _currentUser;
+        private readonly string _roleName;
+        private readonly IMainApp _mainApp;
+        public MainWindow(User? currentUser, string roleName)
+        {
+            InitializeComponent();
+            _currentUser = currentUser;
+            _roleName = roleName;
+            _mainApp = new MainApp();
+            SetupAccess();
+            LoadCategories();
+            LoadManufacturers();
+            LoadSuppliers();
+            LoadProducts();
+            LoadUserInfo();
+        }
+        private void LoadProducts()
+        {
+            ProductsListView.ItemsSource = _mainApp.GetProducts();
+        }
+        private void LoadCategories()
+        {
+            var categories = _mainApp.GetCategories();
+            categories.Insert(0, new Category
+            {
+                Id = 0,
+                Name = "Все категории"
+            });
+            CategoryComboBox.ItemsSource = categories;
+            CategoryComboBox.SelectedValue = 0;
+        }
+        private void LoadManufacturers()
+        {
+            var manufacturers = _mainApp.GetManufacturers();
+            manufacturers.Insert(0, new Manufacturer
+            {
+                Id = 0,
+                Name = "Все производители"
+            });
+            ManufacturerComboBox.ItemsSource = manufacturers;
+            ManufacturerComboBox.SelectedValue = 0;
+        }
+        private void LoadSuppliers()
+        {
+            var suppliers = _mainApp.GetSuppliers();
+            suppliers.Insert(0, new Supplier
+            {
+                Id = 0,
+                Name = "Все поставщики"
+            });
+            SupplierComboBox.ItemsSource = suppliers;
+            SupplierComboBox.SelectedValue = 0;
+        }
+        private void LoadUserInfo()
+        {
+            if (_currentUser == null)
+                UserInfoTextBlock.Text = "Гость";
+            else
+                UserInfoTextBlock.Text = $"{_currentUser.FullName}, {_roleName}";
+        }
+        private void SetupAccess()
+        {
+            bool canFilter = _roleName == "Менеджер" || _roleName == "Администратор";
+            SearchTextBox.IsEnabled = canFilter;
+            CategoryComboBox.IsEnabled = canFilter;
+            ManufacturerComboBox.IsEnabled = canFilter;
+            SupplierComboBox.IsEnabled = canFilter;
+            SortComboBox.IsEnabled = canFilter;
+            bool isAdmin = _roleName == "Администратор";
+            ProductsMenuItems.Visibility = isAdmin ? Visibility.Visible : Visibility.Collapsed;
+        }
+        private void AddProduct_Click(object sender, RoutedEventArgs e)
+        {
+            var window = new AddEditProductWindow();
+            bool? result = window.ShowDialog();
+            if (result == true)
+                ApplyFilters();
+        }
+        private void UpdateProduct_Click(object sender, RoutedEventArgs e)
+        {
+            if (ProductsListView.SelectedItem is not Product selectedProduct)
+            {
+                MessageBox.Show("Выберите товар для редактирования", "Предупреждение",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            var window = new AddEditProductWindow(selectedProduct.Article);
+            bool? result = window.ShowDialog();
+            if (result == true)
+                ApplyFilters();
+        }
+        private void DeleteProduct_Click(object sender, RoutedEventArgs e)
+        {
+            if (ProductsListView.SelectedItem is not Product selectedProduct)
+            {
+                MessageBox.Show("Выберите товар для удаления", "Предупреждение",
+                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+            var result = MessageBox.Show($"Удалить товар - {selectedProduct.Name}?", "Подтверждение удаления",
+                MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (result != MessageBoxResult.Yes)
+                return;
+            try
+            {
+                _mainApp.DeleteProduct(selectedProduct.Article);
+                MessageBox.Show("Товар успешно удален", "Информация",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+                ApplyFilters();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Ошибка удаления",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        private void Exit_Click(object sender, RoutedEventArgs e)
+        {
+            var window = new LoginWindow();
+            window.Show();
+            Close();
+        }
+        private void ApplyFilters()
+        {
+            try
+            {
+                string searchText = SearchTextBox.Text.Trim();
+                int? categoryId = null;
+                int? manufacturerId = null;
+                int? supplierId = null;
+                if (CategoryComboBox.SelectedItem is Category category && category.Id != 0)
+                    categoryId = category.Id;
+                if (ManufacturerComboBox.SelectedItem is Manufacturer manufacturer && manufacturer.Id != 0)
+                    manufacturerId = manufacturer.Id;
+                if (SupplierComboBox.SelectedItem is Supplier supplier && supplier.Id != 0)
+                    supplierId = supplier.Id;
+                string? sortType = null;
+                if (SortComboBox.SelectedItem is ComboBoxItem selectedSort)
+                    sortType = selectedSort.Tag?.ToString();
+                ProductsListView.ItemsSource = _mainApp.GetFilteredProducts(searchText, categoryId, manufacturerId, supplierId, sortType);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Ошибка фильтрации",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            ApplyFilters();
+        }
+        private void CategoryComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (IsLoaded)
+                ApplyFilters();
+        }
+        private void ManufacturerComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (IsLoaded)
+                ApplyFilters();
+        }
+        private void SupplierComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (IsLoaded)
+                ApplyFilters();
+        }
+        private void SortComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (IsLoaded)
+                ApplyFilters();
+        }
+    }
+}
+
+<Window x:Class="EasyShoeDemo.Wpf.AddEditProductWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:EasyShoeDemo.Wpf"
+        mc:Ignorable="d"
+        Title="Товар"
+        Height="600"
+        Width="600"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        FontFamily="Times New Roman">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="180"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="Артикул:" Margin="0,0,10,10" VerticalAlignment="Center" FontSize="16"/>
+        <TextBox x:Name="ArticleTextBox" Grid.Row="0" Grid.Column="1" Height="30" Margin="0,0,0,10" FontSize="16" VerticalContentAlignment="Center" MaxLength="6"/>
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="Наименование:" Margin="0,0,10,10" VerticalAlignment="Center" FontSize="16"/>
+        <TextBox x:Name="NameTextBox" Grid.Row="1" Grid.Column="1" Height="30" Margin="0,0,0,10" FontSize="16" VerticalContentAlignment="Center"/>
+        <TextBlock Grid.Row="2" Grid.Column="0" Text="Единица измерения:" Margin="0,0,10,10" VerticalAlignment="Center" FontSize="16"/>
+        <TextBox x:Name="UnitTextBox" Grid.Row="2" Grid.Column="1" Height="30" Margin="0,0,0,10" FontSize="16" VerticalContentAlignment="Center"/>
+        <TextBlock Grid.Row="3" Grid.Column="0" Text="Цена:" Margin="0,0,10,10" VerticalAlignment="Center" FontSize="16"/>
+        <TextBox x:Name="PriceTextBox" Grid.Row="3" Grid.Column="1" Height="30" Margin="0,0,0,10" FontSize="16" VerticalContentAlignment="Center"/>
+        <TextBlock Grid.Row="4" Grid.Column="0" Text="Категория:" Margin="0,0,10,10" VerticalAlignment="Center" FontSize="16"/>
+        <ComboBox x:Name="CategoryComboBox" Grid.Row="4" Grid.Column="1" Height="30" Margin="0,0,0,10" FontSize="16"/>
+        <TextBlock Grid.Row="5" Grid.Column="0" Text="Производитель:" Margin="0,0,10,10" VerticalAlignment="Center" FontSize="16"/>
+        <ComboBox x:Name="ManufacturerComboBox" Grid.Row="5" Grid.Column="1" Height="30" Margin="0,0,0,10" FontSize="16"/>
+        <TextBlock Grid.Row="6" Grid.Column="0" Text="Поставщик:" Margin="0,0,10,10" VerticalAlignment="Center" FontSize="16"/>
+        <ComboBox x:Name="SupplierComboBox" Grid.Row="6" Grid.Column="1" Height="30" Margin="0,0,0,10" FontSize="16"/>
+        <TextBlock Grid.Row="7" Grid.Column="0" Text="Скидка (%):" Margin="0,0,10,10" VerticalAlignment="Center" FontSize="16"/>
+        <TextBox x:Name="DiscountTextBox" Grid.Row="7" Grid.Column="1" Height="30" Margin="0,0,0,10" FontSize="16" VerticalContentAlignment="Center"/>
+        <TextBlock Grid.Row="8" Grid.Column="0" Text="Количество на складе:" Margin="0,0,10,10" VerticalAlignment="Center" FontSize="16"/>
+        <TextBox x:Name="StockTextBox" Grid.Row="8" Grid.Column="1" Height="30" Margin="0,0,0,10" FontSize="16" VerticalContentAlignment="Center"/>
+        <TextBlock Grid.Row="9" Grid.Column="0" Text="Описание:" Margin="0,0,10,0" VerticalAlignment="Top" FontSize="16"/>
+        <TextBox x:Name="DescriptionTextBox" Grid.Row="9" Grid.Column="1" Height="100" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" FontSize="16"/>
+        <Button x:Name="ImageButton" Grid.Row="10" Grid.Column="0" Content="Выбрать изображение" Width="160" Height="25" HorizontalAlignment="Center" Click="ImageButton_Click"/>
+        <TextBox x:Name="PhotoPathTextBox" Grid.Row="10" Grid.Column="1" Height="30" Margin="0,0,0,10" FontSize="16" VerticalContentAlignment="Center" IsReadOnly="True"/>
+        <StackPanel Grid.Row="11" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="Save" Content="Сохранить" Width="100" Height="25" Margin="0,0,25,0" Click="Save_Click"/>
+            <Button x:Name="Cancel" Content="Отмена" Width="100" Height="25" Click="Cancel_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>
+
+using EasyShoeDemo.Lib.Entities;
+using EasyShoeDemo.Lib.Services;
+using Microsoft.Win32;
+using System.IO;
+using System.Windows;
+
+namespace EasyShoeDemo.Wpf
+{
+    public partial class AddEditProductWindow : Window
+    {
+        private readonly IMainApp _mainApp;
+        private readonly bool _isEditMode;
+        private Product _product;
+        public AddEditProductWindow(string? article = null)
+        {
+            InitializeComponent();
+            _mainApp = new MainApp();
+            LoadComboBoxes();
+            if (string.IsNullOrWhiteSpace(article))
+            {
+                _isEditMode = false;
+                _product = new Product();
+                Title = "Добавление товара";
+                ArticleTextBox.IsReadOnly = false;
+            }
+            else
+            {
+                _isEditMode = true;
+                Title = "Редактирование товара";
+                ArticleTextBox.IsReadOnly = true;
+                _product = _mainApp.GetProductByArticle(article)
+                    ?? throw new Exception("Товар не найден");
+                LoadProductData();
+
+            }
+        }
+        private void LoadComboBoxes()
+        {
+            CategoryComboBox.ItemsSource = _mainApp.GetCategories();
+            CategoryComboBox.DisplayMemberPath = "Name";
+            CategoryComboBox.SelectedValuePath = "Id";
+            ManufacturerComboBox.ItemsSource = _mainApp.GetManufacturers();
+            ManufacturerComboBox.DisplayMemberPath = "Name";
+            ManufacturerComboBox.SelectedValuePath = "Id";
+            SupplierComboBox.ItemsSource = _mainApp.GetSuppliers();
+            SupplierComboBox.DisplayMemberPath = "Name";
+            SupplierComboBox.SelectedValuePath = "Id";
+        }
+        private void LoadProductData()
+        {
+            ArticleTextBox.Text = _product.Article;
+            NameTextBox.Text = _product.Name;
+            UnitTextBox.Text = _product.Unit;
+            PriceTextBox.Text = _product.Price.ToString();
+            CategoryComboBox.SelectedValue = _product.CategoryId;
+            ManufacturerComboBox.SelectedValue = _product.ManufacturerId;
+            SupplierComboBox.SelectedValue = _product.SupplierId;
+            DiscountTextBox.Text = _product.DiscountPercent.ToString();
+            StockTextBox.Text = _product.StockQuantity.ToString();
+            DescriptionTextBox.Text = _product.Description;
+            PhotoPathTextBox.Text = _product.PhotoPath ?? "";
+        }
+        private void Save_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                FillProductFromFields();
+                if (_isEditMode)
+                    _mainApp.UpdateProduct(_product);
+                else
+                    _mainApp.AddProduct(_product);
+                MessageBox.Show(
+                    "Товар успешно сохранён.",
+                    "Информация",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                DialogResult = true;
+                Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    ex.Message,
+                    "Ошибка сохранения",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+        private void Cancel_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
+        }
+        private void ImageButton_Click(object sender, RoutedEventArgs e)
+        {
+            var openFileDialog = new OpenFileDialog
+            {
+                Filter = "Изображения|*.jpg;*.jpeg;*.png"
+            };
+            if (openFileDialog.ShowDialog() != true)
+                return;
+            try
+            {
+                string imagesFolder = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "images");
+                if (!Directory.Exists(imagesFolder))
+                    Directory.CreateDirectory(imagesFolder);
+                string originalExtension = System.IO.Path.GetExtension(openFileDialog.FileName);
+                string newFileName = Guid.NewGuid().ToString() + originalExtension;
+                string destinationPath = System.IO.Path.Combine(imagesFolder, newFileName);
+                File.Copy(openFileDialog.FileName, destinationPath, true);
+                PhotoPathTextBox.Text = newFileName;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Ошибка при выборе изображения:\n{ex.Message}",
+                    "Ошибка",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+        private void FillProductFromFields()
+        {
+            string article = ArticleTextBox.Text.Trim();
+            string name = NameTextBox.Text.Trim();
+            string unit = UnitTextBox.Text.Trim();
+            string description = DescriptionTextBox.Text.Trim();
+            string photoPath = PhotoPathTextBox.Text.Trim();
+            if (!decimal.TryParse(PriceTextBox.Text.Trim(), out decimal price))
+                throw new Exception("Введите корректную цену.");
+            if (!int.TryParse(DiscountTextBox.Text.Trim(), out int discount))
+                throw new Exception("Введите корректную скидку.");
+            if (!int.TryParse(StockTextBox.Text.Trim(), out int stock))
+                throw new Exception("Введите корректное количество на складе.");
+            _product.Article = article;
+            _product.Name = name;
+            _product.Unit = unit;
+            _product.Price = price;
+            _product.DiscountPercent = discount;
+            _product.StockQuantity = stock;
+            _product.Description = description;
+            _product.CategoryId = CategoryComboBox.SelectedValue == null
+                ? 0
+                : (int)CategoryComboBox.SelectedValue;
+            _product.ManufacturerId = ManufacturerComboBox.SelectedValue == null
+                ? 0
+                : (int)ManufacturerComboBox.SelectedValue;
+            _product.SupplierId = SupplierComboBox.SelectedValue == null
+                ? 0
+                : (int)SupplierComboBox.SelectedValue;
+            _product.PhotoPath = string.IsNullOrWhiteSpace(photoPath) ? null : photoPath;
+        }
+    }
+}
