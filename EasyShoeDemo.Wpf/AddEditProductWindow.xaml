@@ -1,0 +1,60 @@
+﻿<Window x:Class="EasyShoeDemo.Wpf.AddEditProductWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:EasyShoeDemo.Wpf"
+        mc:Ignorable="d"
+        Title="Товар"
+        Height="600"
+        Width="600"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        FontFamily="Times New Roman">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="180"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="Артикул:" Margin="0,0,10,10" VerticalAlignment="Center" FontSize="16"/>
+        <TextBox x:Name="ArticleTextBox" Grid.Row="0" Grid.Column="1" Height="30" Margin="0,0,0,10" FontSize="16" VerticalContentAlignment="Center" MaxLength="6"/>
+        <TextBlock Grid.Row="1" Grid.Column="0" Text="Наименование:" Margin="0,0,10,10" VerticalAlignment="Center" FontSize="16"/>
+        <TextBox x:Name="NameTextBox" Grid.Row="1" Grid.Column="1" Height="30" Margin="0,0,0,10" FontSize="16" VerticalContentAlignment="Center"/>
+        <TextBlock Grid.Row="2" Grid.Column="0" Text="Единица измерения:" Margin="0,0,10,10" VerticalAlignment="Center" FontSize="16"/>
+        <TextBox x:Name="UnitTextBox" Grid.Row="2" Grid.Column="1" Height="30" Margin="0,0,0,10" FontSize="16" VerticalContentAlignment="Center"/>
+        <TextBlock Grid.Row="3" Grid.Column="0" Text="Цена:" Margin="0,0,10,10" VerticalAlignment="Center" FontSize="16"/>
+        <TextBox x:Name="PriceTextBox" Grid.Row="3" Grid.Column="1" Height="30" Margin="0,0,0,10" FontSize="16" VerticalContentAlignment="Center"/>
+        <TextBlock Grid.Row="4" Grid.Column="0" Text="Категория:" Margin="0,0,10,10" VerticalAlignment="Center" FontSize="16"/>
+        <ComboBox x:Name="CategoryComboBox" Grid.Row="4" Grid.Column="1" Height="30" Margin="0,0,0,10" FontSize="16"/>
+        <TextBlock Grid.Row="5" Grid.Column="0" Text="Производитель:" Margin="0,0,10,10" VerticalAlignment="Center" FontSize="16"/>
+        <ComboBox x:Name="ManufacturerComboBox" Grid.Row="5" Grid.Column="1" Height="30" Margin="0,0,0,10" FontSize="16"/>
+        <TextBlock Grid.Row="6" Grid.Column="0" Text="Поставщик:" Margin="0,0,10,10" VerticalAlignment="Center" FontSize="16"/>
+        <ComboBox x:Name="SupplierComboBox" Grid.Row="6" Grid.Column="1" Height="30" Margin="0,0,0,10" FontSize="16"/>
+        <TextBlock Grid.Row="7" Grid.Column="0" Text="Скидка (%):" Margin="0,0,10,10" VerticalAlignment="Center" FontSize="16"/>
+        <TextBox x:Name="DiscountTextBox" Grid.Row="7" Grid.Column="1" Height="30" Margin="0,0,0,10" FontSize="16" VerticalContentAlignment="Center"/>
+        <TextBlock Grid.Row="8" Grid.Column="0" Text="Количество на складе:" Margin="0,0,10,10" VerticalAlignment="Center" FontSize="16"/>
+        <TextBox x:Name="StockTextBox" Grid.Row="8" Grid.Column="1" Height="30" Margin="0,0,0,10" FontSize="16" VerticalContentAlignment="Center"/>
+        <TextBlock Grid.Row="9" Grid.Column="0" Text="Описание:" Margin="0,0,10,0" VerticalAlignment="Top" FontSize="16"/>
+        <TextBox x:Name="DescriptionTextBox" Grid.Row="9" Grid.Column="1" Height="100" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" FontSize="16"/>
+        <Button x:Name="ImageButton" Grid.Row="10" Grid.Column="0" Content="Выбрать изображение" Width="160" Height="25" HorizontalAlignment="Center" Click="ImageButton_Click"/>
+        <TextBox x:Name="PhotoPathTextBox" Grid.Row="10" Grid.Column="1" Height="30" Margin="0,0,0,10" FontSize="16" VerticalContentAlignment="Center" IsReadOnly="True"/>
+        <StackPanel Grid.Row="11" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="Save" Content="Сохранить" Width="100" Height="25" Margin="0,0,25,0" Click="Save_Click"/>
+            <Button x:Name="Cancel" Content="Отмена" Width="100" Height="25" Click="Cancel_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

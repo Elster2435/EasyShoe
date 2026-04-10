@@ -1,0 +1,186 @@
+create table categories
+(
+    id integer primary key,
+    name varchar(128) not null unique
+);
+create table manufacturers
+(
+    id integer primary key,
+    name varchar(100) not null unique
+);
+create table suppliers
+(
+    id integer primary key,
+    name varchar(150) not null unique
+);
+create table roles
+(
+    id integer primary key,
+    name varchar(100) not null unique
+);
+create table pickup_points
+(
+    id integer primary key,
+    address varchar(255) not null unique
+);
+create table users
+(
+    id integer primary key,
+    login varchar(150) not null unique,
+    password_hash varchar(255) not null,
+    full_name varchar(255) not null,
+    role_id integer not null,
+    
+    constraint fk_users_role
+        foreign key (role_id)
+        references roles(id)
+        on update cascade
+        on delete restrict
+);
+create table products
+(
+    article varchar(6) primary key,
+    name varchar(150) not null,
+    unit varchar(20) not null,
+    price numeric(10, 2) not null,
+    category_id integer not null,
+    manufacturer_id integer not null,
+    supplier_id integer not null,
+    discount_percent integer not null default 0,
+    stock_quantity integer not null default 0,
+    description text,
+    photo_path varchar(255),
+
+    constraint fk_products_category
+        foreign key (category_id)
+        references categories(id)
+        on update cascade
+        on delete restrict,
+
+    constraint fk_products_manufacturer
+        foreign key (manufacturer_id)
+        references manufacturers(id)
+        on update cascade
+        on delete restrict,
+
+    constraint fk_products_supplier
+        foreign key (supplier_id)
+        references suppliers(id)
+        on update cascade
+        on delete restrict,
+
+    constraint chk_products_price
+        check (price >= 0),
+
+    constraint chk_products_discount_percent
+        check (discount_percent >= 0 and discount_percent <= 100),
+
+    constraint chk_products_stock_quantity
+        check (stock_quantity >= 0)
+);
+create table orders
+(
+    id integer primary key,
+    client_id integer not null,
+    pickup_point_id integer not null,
+    order_date date not null,
+    delivery_date date not null,
+    status varchar(50) not null,
+    pickup_code integer not null,
+
+    constraint fk_orders_client
+        foreign key (client_id)
+        references users(id)
+        on update cascade
+        on delete restrict,
+
+    constraint fk_orders_pickup_point
+        foreign key (pickup_point_id)
+        references pickup_points(id)
+        on update cascade
+        on delete restrict,
+
+    constraint chk_orders_status
+        check (status in ('Новый', 'Завершен')),
+
+    constraint chk_orders_dates
+        check (delivery_date >= order_date),
+
+    constraint chk_orders_pickup_code
+        check (pickup_code >= 0)
+);
+create table order_items
+(
+    order_id integer not null,
+    product_article varchar(20) not null,
+    quantity integer not null,
+
+    constraint pk_order_items
+        primary key (order_id, product_article),
+
+    constraint fk_order_items_order
+        foreign key (order_id)
+        references orders(id)
+        on update cascade
+        on delete restrict,
+
+    constraint fk_order_items_product
+        foreign key (product_article)
+        references products(article)
+        on update cascade
+        on delete restrict,
+
+    constraint chk_order_items_quantity
+        check (quantity > 0)
+);
+copy categories(id, name)
+from 'C:\csv\categories.csv'
+with (format csv, header true, encoding 'UTF8');
+
+copy manufacturers(id, name)
+from 'C:\csv\manufacturers.csv'
+with (format csv, header true, encoding 'UTF8');
+
+copy suppliers(id, name)
+from 'C:\csv\suppliers.csv'
+with (format csv, header true, encoding 'UTF8');
+
+copy roles(id, name)
+from 'C:\csv\roles.csv'
+with (format csv, header true, encoding 'UTF8');
+
+copy pickup_points(id, address)
+from 'C:\csv\pickup_points.csv'
+with (format csv, header true, encoding 'UTF8');
+
+copy users(id, login, password_hash, full_name, role_id)
+from 'C:\csv\users.csv'
+with (format csv, header true, encoding 'UTF8');
+
+copy products(article, name, unit, price, category_id, manufacturer_id, supplier_id, discount_percent, stock_quantity, description, photo_path)
+from 'C:\csv\products.csv'
+with (format csv, header true, encoding 'UTF8');
+
+copy orders(id, client_id, pickup_point_id, order_date, delivery_date, status, pickup_code)
+from 'C:\csv\orders.csv'
+with (format csv, header true, encoding 'UTF8');
+
+copy order_items(order_id, product_article, quantity)
+from 'C:\csv\order_items.csv'
+with (format csv, header true, encoding 'UTF8');
+
+GRANT USAGE, CREATE ON SCHEMA app TO app;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA app
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO app;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA app
+GRANT USAGE, SELECT ON SEQUENCES TO app;
+
+GRANT SELECT, INSERT, UPDATE, DELETE
+ON ALL TABLES IN SCHEMA app
+TO app;
+
+GRANT USAGE, SELECT
+ON ALL SEQUENCES IN SCHEMA app
+TO app;

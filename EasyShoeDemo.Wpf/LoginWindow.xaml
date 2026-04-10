@@ -1,0 +1,30 @@
+﻿<Window x:Class="EasyShoeDemo.Wpf.LoginWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:EasyShoeDemo.Wpf"
+        mc:Ignorable="d"
+        Title="LoginWindow" Height="200" Width="300">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <TextBlock Text="Вход в систему" Grid.Row="0"/>
+        <StackPanel Grid.Row="1">
+            <TextBlock Text="Логин"/>
+            <TextBox x:Name="LoginTextBox"/>
+        </StackPanel>
+        <StackPanel Grid.Row="2">
+            <TextBlock Text="Пароль"/>
+            <PasswordBox x:Name="PasswordBox"/>
+        </StackPanel>
+        <StackPanel Grid.Row="3" Orientation="Horizontal">
+            <Button x:Name="LoginButton" Content="Войти" Width="100" Height="25" Click="LoginButton_Click"/>
+            <Button x:Name="GuestButton" Content="Войти как гость" Width="100" Height="25" Click="GuestButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="EasyShoeDemo.Lib/EasyShoeDemo.Lib.csproj" />
+  <Project Path="EasyShoeDemo.Wpf/EasyShoeDemo.Wpf.csproj" />
+</Solution>
